@@ -61,7 +61,7 @@ module specification version. If Gephi still reports that the plugin is already
 installed, uninstall `Gephi MCP Plugin` from `Tools -> Plugins -> Installed`,
 restart Gephi, and then install the new NBM.
 
-For local development, Gephi's NetBeans launcher can also reload the module jar
+For local development, Gephi's NetBeans launcher can also install the module jar
 without using the plugin UI. Close Gephi first, then run:
 
 ```bash
@@ -69,8 +69,9 @@ npm run gephi:reload
 ```
 
 The script builds the plugin and runs Gephi with `--reload` against the built
-module jar. Set `GEPHI_BIN=/path/to/gephi/bin/gephi` if Gephi is installed
-somewhere else.
+module jar on first install. If Gephi's module registry already points at that
+jar, the script starts Gephi normally so the freshly built jar is loaded once.
+Set `GEPHI_BIN=/path/to/gephi/bin/gephi` if Gephi is installed somewhere else.
 
 Run Gephi with the plugin pre-installed:
 

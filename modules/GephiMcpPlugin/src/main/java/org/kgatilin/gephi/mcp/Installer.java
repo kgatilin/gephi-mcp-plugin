@@ -24,6 +24,21 @@ public class Installer extends ModuleInstall {
 
     @Override
     public void close() {
+        stopServer();
+    }
+
+    @Override
+    public boolean closing() {
+        stopServer();
+        return true;
+    }
+
+    @Override
+    public void uninstalled() {
+        stopServer();
+    }
+
+    private synchronized void stopServer() {
         if (server != null) {
             server.stop();
             server = null;

@@ -317,9 +317,11 @@ final class GephiFacade {
         Predicate<Node> nodePredicate = n -> true;
         Predicate<Edge> edgePredicate = e -> true;
         if ("edge".equals(elementType)) {
-            edgePredicate = e -> matchesFilter(e, attribute, operator, value, base);
+            Column column = attributeColumn(model.getEdgeTable(), attribute, "edge");
+            edgePredicate = e -> matchesFilterValue(attributeValue(e, attribute, base, column), operator, value);
         } else {
-            nodePredicate = n -> matchesFilter(n, attribute, operator, value, base);
+            Column column = attributeColumn(model.getNodeTable(), attribute, "node");
+            nodePredicate = n -> matchesFilterValue(attributeValue(n, attribute, base, column), operator, value);
         }
         destroyFilterView(model);
         filterView = model.createView(nodePredicate, edgePredicate);
@@ -456,7 +458,7 @@ final class GephiFacade {
 
     private List<Object> columns(Table table) {
         List<Object> columns = new ArrayList<>();
-        for (Column column : table) {
+        for (Column column : columnsSnapshot(table)) {
             Map<String, Object> record = new LinkedHashMap<>();
             record.put("id", column.getId());
             record.put("title", column.getTitle());
@@ -468,6 +470,22 @@ final class GephiFacade {
             record.put("dynamic", column.isDynamic());
             record.put("readOnly", column.isReadOnly());
             columns.add(record);
+        }
+        return columns;
+    }
+
+    private List<Column> columnsSnapshot(Table table) {
+        List<Column> columns = new ArrayList<>();
+        for (Column column : table) {
+            columns.add(column);
+        }
+        return columns;
+    }
+
+    private List<Column> attributeColumnsSnapshot(Element element) {
+        List<Column> columns = new ArrayList<>();
+        for (Column column : element.getAttributeColumns()) {
+            columns.add(column);
         }
         return columns;
     }
@@ -505,7 +523,7 @@ final class GephiFacade {
 
     private Map<String, Object> attributesRecord(Element element) {
         Map<String, Object> attrs = new LinkedHashMap<>();
-        for (Column column : element.getAttributeColumns()) {
+        for (Column column : attributeColumnsSnapshot(element)) {
             Object value = element.getAttribute(column);
             if (value != null) {
                 attrs.put(column.getId(), value);
@@ -552,7 +570,7 @@ final class GephiFacade {
     }
 
     private boolean matchesAttributes(Element element, String query) {
-        for (Column column : element.getAttributeColumns()) {
+        for (Column column : attributeColumnsSnapshot(element)) {
             Object value = element.getAttribute(column);
             if (contains(column.getId(), query) || contains(value, query)) {
                 return true;
@@ -563,6 +581,10 @@ final class GephiFacade {
 
     private boolean matchesFilter(Element element, String attribute, String op, String value, Graph graph) {
         Object raw = attributeValue(element, attribute, graph);
+        return matchesFilterValue(raw, op, value);
+    }
+
+    private boolean matchesFilterValue(Object raw, String op, String value) {
         String actual = raw == null ? "" : String.valueOf(raw);
         String expected = value == null ? "" : value;
         return switch (op) {
@@ -620,13 +642,42 @@ final class GephiFacade {
         return column == null ? null : element.getAttribute(column);
     }
 
+    private Object attributeValue(Element element, String attribute, Graph graph, Column column) {
+        String attr = attribute == null ? "" : attribute;
+        if ("id".equals(attr)) {
+            return element.getId();
+        }
+        if ("label".equals(attr)) {
+            return element.getLabel();
+        }
+        if (element instanceof Node node && "degree".equals(attr)) {
+            return graph.getDegree(node);
+        }
+        if (element instanceof Edge edge) {
+            if ("source".equals(attr)) {
+                return edge.getSource().getId();
+            }
+            if ("target".equals(attr)) {
+                return edge.getTarget().getId();
+            }
+            if ("weight".equals(attr)) {
+                return edge.getWeight();
+            }
+            if ("type".equals(attr)) {
+                return edge.getTypeLabel();
+            }
+        }
+        return column == null ? null : element.getAttribute(column);
+    }
+
     private Column attributeColumn(Element element, String attr) {
+        List<Column> columns = attributeColumnsSnapshot(element);
         Set<String> candidates = new LinkedHashSet<>();
         candidates.add(attr);
         candidates.addAll(attributeAliases(element, attr));
         for (String candidate : candidates) {
             String wanted = normalize(candidate);
-            for (Column column : element.getAttributeColumns()) {
+            for (Column column : columns) {
                 String id = normalize(column.getId());
                 String title = normalize(column.getTitle());
                 if (id.equals(wanted) || title.equals(wanted)) {
@@ -635,7 +686,33 @@ final class GephiFacade {
             }
         }
         String wanted = normalize(attr);
-        for (Column column : element.getAttributeColumns()) {
+        for (Column column : columns) {
+            String id = normalize(column.getId());
+            String title = normalize(column.getTitle());
+            if (id.equals(wanted) || title.equals(wanted) || id.endsWith("_" + wanted)) {
+                return column;
+            }
+        }
+        return null;
+    }
+
+    private Column attributeColumn(Table table, String attr, String elementType) {
+        List<Column> columns = columnsSnapshot(table);
+        Set<String> candidates = new LinkedHashSet<>();
+        candidates.add(attr);
+        candidates.addAll(attributeAliases(elementType, attr));
+        for (String candidate : candidates) {
+            String wanted = normalize(candidate);
+            for (Column column : columns) {
+                String id = normalize(column.getId());
+                String title = normalize(column.getTitle());
+                if (id.equals(wanted) || title.equals(wanted)) {
+                    return column;
+                }
+            }
+        }
+        String wanted = normalize(attr);
+        for (Column column : columns) {
             String id = normalize(column.getId());
             String title = normalize(column.getTitle());
             if (id.equals(wanted) || title.equals(wanted) || id.endsWith("_" + wanted)) {
@@ -646,14 +723,18 @@ final class GephiFacade {
     }
 
     private List<String> attributeAliases(Element element, String attr) {
+        return attributeAliases(element instanceof Edge ? "edge" : "node", attr);
+    }
+
+    private List<String> attributeAliases(String elementType, String attr) {
         List<String> aliases = new ArrayList<>();
-        if (element instanceof Node) {
+        if ("node".equals(elementType)) {
             aliases.add("n_" + attr);
             if ("archmotif_id".equals(attr)) {
                 aliases.add("n_id");
             }
         }
-        if (element instanceof Edge) {
+        if ("edge".equals(elementType)) {
             aliases.add("e_" + attr);
             if ("relation".equals(attr)) {
                 aliases.add("e_kind");

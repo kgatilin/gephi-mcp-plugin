@@ -10,6 +10,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,7 +22,9 @@ final class ControlServer {
 
     private final int port;
     private final GephiFacade gephi;
+    private final ReentrantLock commandLock = new ReentrantLock(true);
     private HttpServer server;
+    private ExecutorService executor;
 
     ControlServer(int port, GephiFacade gephi) {
         this.port = port;
@@ -27,6 +33,7 @@ final class ControlServer {
 
     void start() {
         try {
+            preloadResponseClasses();
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
             context("/health", this::handleHealth);
             context("/graph/summary", this::handleGraphSummary);
@@ -43,31 +50,57 @@ final class ControlServer {
             context("/graph/filter/reset", this::handleResetFilters);
             context("/layouts", this::handleLayouts);
             context("/layouts/run", this::handleRunLayout);
-            server.setExecutor(command -> {
-                Thread t = new Thread(command, "gephi-mcp-control");
+            AtomicInteger counter = new AtomicInteger();
+            executor = Executors.newCachedThreadPool(command -> {
+                Thread t = new Thread(command, "gephi-mcp-control-" + counter.incrementAndGet());
                 t.setDaemon(true);
-                t.start();
+                return t;
             });
+            server.setExecutor(executor);
             server.start();
         } catch (IOException e) {
             throw new IllegalStateException("cannot start local control server", e);
         }
     }
 
+    private void preloadResponseClasses() {
+        Json.quote("");
+        GraphSummary.empty("").toJson();
+    }
+
     private void context(String path, Handler handler) {
         server.createContext(path, exchange -> {
+            boolean locked = false;
             try {
+                if (!"/health".equals(path)) {
+                    locked = commandLock.tryLock();
+                    if (!locked) {
+                        write(exchange, 409, Json.error("busy", "another Gephi MCP command is still running"));
+                        return;
+                    }
+                }
                 handler.handle(exchange);
             } catch (RuntimeException | Error e) {
                 LOG.log(Level.WARNING, "Gephi MCP request failed: " + exchange.getRequestURI(), e);
                 write(exchange, 500, Json.error(e.getClass().getSimpleName(), e.getMessage()));
+            } finally {
+                if (locked) {
+                    commandLock.unlock();
+                }
             }
         });
     }
 
     void stop() {
-        if (server != null) {
-            server.stop(0);
+        HttpServer current = server;
+        server = null;
+        if (current != null) {
+            current.stop(1);
+        }
+        ExecutorService currentExecutor = executor;
+        executor = null;
+        if (currentExecutor != null) {
+            currentExecutor.shutdownNow();
         }
     }
 

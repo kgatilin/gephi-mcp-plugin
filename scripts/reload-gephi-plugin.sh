@@ -3,6 +3,8 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 gephi_bin="${GEPHI_BIN:-/Applications/Gephi.app/Contents/Resources/gephi/bin/gephi}"
+gephi_userdir="${GEPHI_USERDIR:-$HOME/Library/Application Support/gephi/0.11}"
+module_status="$gephi_userdir/config/Modules/org-kgatilin-gephi-gephi-mcp-plugin.xml"
 
 if [[ ! -x "$gephi_bin" ]]; then
   echo "Gephi launcher not found: $gephi_bin" >&2
@@ -20,4 +22,9 @@ if [[ -z "$jar_path" ]]; then
 fi
 
 echo "Reloading Gephi module from: $jar_path"
-"$gephi_bin" --nosplash --reload "$jar_path"
+if [[ -f "$module_status" ]] && grep -Fq "<param name=\"jar\">$jar_path</param>" "$module_status"; then
+  echo "Module status already points at this jar; starting Gephi without --reload."
+  "$gephi_bin" --nosplash
+else
+  "$gephi_bin" --nosplash --reload "$jar_path"
+fi
