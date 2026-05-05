@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="kind" for="node" attr.name="kind" attr.type="string"/>
+  <key id="foreign" for="node" attr.name="foreign" attr.type="boolean"/>
+  <key id="relation" for="edge" attr.name="relation" attr.type="string"/>
+  <graph id="tiny" edgedefault="directed">
+    <node id="pkg/api">
+      <data key="kind">package</data>
+      <data key="foreign">false</data>
+    </node>
+    <node id="pkg/service">
+      <data key="kind">package</data>
+      <data key="foreign">false</data>
+    </node>
+    <node id="external/log">
+      <data key="kind">package</data>
+      <data key="foreign">true</data>
+    </node>
+    <edge id="e1" source="pkg/api" target="pkg/service">
+      <data key="relation">calls</data>
+    </edge>
+    <edge id="e2" source="pkg/service" target="external/log">
+      <data key="relation">dependsOn</data>
+    </edge>
+  </graph>
+</graphml>

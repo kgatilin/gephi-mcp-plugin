@@ -56,7 +56,12 @@ cd /Users/kgatilin/dev/tools/gephi-mcp-plugin
 mvn package org.gephi:gephi-maven-plugin:run
 ```
 
-In Gephi, import a GraphML/GEXF file into the current workspace.
+In Gephi, import a GraphML/GEXF file into the current workspace. A tiny sample
+is included at:
+
+```text
+/Users/kgatilin/dev/tools/gephi-mcp-plugin/examples/tiny.graphml
+```
 
 Terminal 2: check the plugin HTTP endpoint.
 
