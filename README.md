@@ -50,11 +50,16 @@ mvn clean package
 The installable NBM is written to:
 
 ```text
-modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.0-SNAPSHOT.nbm
+modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.1-SNAPSHOT.nbm
 ```
 
 Install it in Gephi Desktop through `Tools -> Plugins -> Downloaded -> Add
 Plugins...`, then restart Gephi.
+
+When replacing an already installed local build, the NBM must have a higher
+module specification version. If Gephi still reports that the plugin is already
+installed, uninstall `Gephi MCP Plugin` from `Tools -> Plugins -> Installed`,
+restart Gephi, and then install the new NBM.
 
 Run Gephi with the plugin pre-installed:
 
