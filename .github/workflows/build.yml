@@ -14,5 +14,10 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
       - run: mvn -B clean package
-
+      - run: npm ci
+      - run: npm run mcp:list

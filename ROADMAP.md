@@ -31,6 +31,12 @@ Verify:
 
 ## Stage 1 - MCP Transport
 
+Current partial result:
+
+- A stdio MCP sidecar exists in `mcp-server/`.
+- It exposes `gephi_health` and `get_graph_summary`.
+- It calls the Gephi plugin's localhost HTTP endpoint.
+
 Result:
 
 - Add MCP server transport on localhost.
@@ -116,10 +122,10 @@ Verify:
 
 ## Open Questions
 
-- MCP transport: use the official Java SDK directly inside the NetBeans module,
-  or run a tiny sidecar process that talks to the plugin over localhost HTTP.
+- MCP transport: keep the sidecar process that talks to the plugin over
+  localhost HTTP, or embed the official Java SDK directly inside the NetBeans
+  module later.
 - Auth: per-session token, manual enable toggle, or both.
 - Threading: which Gephi API calls need dispatch onto Swing/NetBeans UI thread.
 - Distribution: publish as standalone NBM, GitHub release zip, or Gephi
   Marketplace plugin later.
-

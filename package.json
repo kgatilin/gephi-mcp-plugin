@@ -1,0 +1,20 @@
+{
+  "name": "gephi-mcp-plugin-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP sidecar for the Gephi MCP Plugin localhost control endpoint.",
+  "bin": {
+    "gephi-mcp-sidecar": "mcp-server/index.js"
+  },
+  "scripts": {
+    "mcp": "node mcp-server/index.js",
+    "mcp:list": "node scripts/mcp-call.js list",
+    "mcp:health": "node scripts/mcp-call.js gephi_health",
+    "mcp:summary": "node scripts/mcp-call.js get_graph_summary"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  }
+}

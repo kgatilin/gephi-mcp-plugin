@@ -8,17 +8,21 @@ operations consistently.
 
 This plugin runs inside Gephi so it can access Gephi's current workspace and
 controllers through the normal NetBeans Lookup mechanism. The plugin exposes a
-localhost control endpoint. MCP tools will be added as a protocol layer over
-the same command facade.
+localhost control endpoint. A stdio MCP sidecar currently wraps that endpoint as
+tools.
 
 ## Components
 
 ```text
 MCP client / local agent
         |
-        | MCP over localhost HTTP
+        | MCP stdio
         v
-Gephi MCP Plugin
+MCP sidecar process
+        |
+        | localhost HTTP
+        v
+Gephi MCP Plugin inside Gephi Desktop
         |
         | command facade
         v
@@ -40,9 +44,9 @@ Gephi APIs
 
 ## MVP Transport
 
-The first implementation uses a tiny localhost HTTP server with health and
-graph-summary endpoints. That keeps the plugin testable before introducing MCP
-SDK classloading and transport concerns.
+The first implementation uses a tiny localhost HTTP server inside Gephi plus a
+separate stdio MCP sidecar. That keeps the plugin testable before introducing
+MCP SDK classloading into the NetBeans module.
 
 ## MCP Layer
 
@@ -58,4 +62,3 @@ The MCP layer should expose narrow tools, not arbitrary code execution:
 Binding to `127.0.0.1` is required but insufficient. Mutating endpoints should
 require a token displayed in Gephi or written to a local session file. The
 server should be disabled by default if we ever ship it to other users.
-
