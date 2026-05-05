@@ -11,7 +11,15 @@
     "mcp": "node mcp-server/index.js",
     "mcp:list": "node scripts/mcp-call.js list",
     "mcp:health": "node scripts/mcp-call.js gephi_health",
-    "mcp:summary": "node scripts/mcp-call.js get_graph_summary"
+    "mcp:summary": "node scripts/mcp-call.js get_graph_summary",
+    "mcp:layouts": "node scripts/mcp-call.js list_layouts",
+    "mcp:nodes": "node scripts/mcp-call.js sample_nodes '{\"limit\":10}'",
+    "mcp:preset": "node scripts/mcp-call.js apply_code_graph_preset",
+    "mcp:partition-kind": "node scripts/mcp-call.js partition_nodes '{\"attribute\":\"kind\"}'",
+    "mcp:ranking-degree": "node scripts/mcp-call.js ranking_nodes '{\"attribute\":\"degree\",\"minSize\":6,\"maxSize\":32}'",
+    "mcp:filter-foreign": "node scripts/mcp-call.js filter_graph '{\"element\":\"node\",\"attribute\":\"foreign\",\"op\":\"neq\",\"value\":\"true\"}'",
+    "mcp:reset-filters": "node scripts/mcp-call.js reset_filters",
+    "mcp:run-layout": "node scripts/mcp-call.js run_layout '{\"name\":\"ForceAtlas\",\"iterations\":100}'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

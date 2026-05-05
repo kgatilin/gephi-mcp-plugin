@@ -22,15 +22,10 @@ final class GraphSummary {
     String toJson() {
         return "{"
                 + "\"hasGraph\":" + hasGraph
-                + ",\"reason\":\"" + escape(reason) + "\""
+                + ",\"reason\":" + Json.quote(reason)
                 + ",\"nodes\":" + nodes
                 + ",\"edges\":" + edges
                 + ",\"directed\":" + directed
                 + "}";
     }
-
-    private static String escape(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
 }
-

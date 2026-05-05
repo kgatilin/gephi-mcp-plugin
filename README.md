@@ -7,20 +7,32 @@ and export the result without manually clicking through the Gephi UI.
 
 ## Status
 
-Early proof of concept. The plugin skeleton builds as a Gephi module and starts
-a localhost-only HTTP control server inside Gephi:
+Early proof of concept, but the first useful control surface is in place. The
+Gephi plugin builds as an NBM and starts a localhost-only HTTP control server
+inside Gephi. A stdio MCP sidecar wraps that endpoint as agent tools.
 
-- `GET http://127.0.0.1:8765/health`
-- `GET http://127.0.0.1:8765/graph/summary`
-
-The repository also includes a stdio MCP sidecar that exposes the first tools:
+Current MCP tools:
 
 - `gephi_health`
 - `get_graph_summary`
+- `list_node_attributes`
+- `list_edge_attributes`
+- `sample_nodes`
+- `sample_edges`
+- `get_node`
+- `get_neighborhood`
+- `partition_nodes`
+- `partition_edges`
+- `ranking_nodes`
+- `apply_code_graph_preset`
+- `filter_graph`
+- `reset_filters`
+- `list_layouts`
+- `run_layout`
 
-The sidecar calls the plugin's localhost HTTP endpoint. This keeps the first MCP
-test path simple before deciding whether to embed the MCP Java SDK directly
-inside the NetBeans module.
+The mutating tools update the current Gephi workspace in place: layouts change
+node positions, partition/ranking tools change element color/size, and filters
+replace the visible Gephi graph view until `reset_filters` is called.
 
 ## Build
 
@@ -34,6 +46,15 @@ Build the plugin:
 ```bash
 mvn clean package
 ```
+
+The installable NBM is written to:
+
+```text
+modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.0-SNAPSHOT.nbm
+```
+
+Install it in Gephi Desktop through `Tools -> Plugins -> Downloaded -> Add
+Plugins...`, then restart Gephi.
 
 Run Gephi with the plugin pre-installed:
 
@@ -68,6 +89,7 @@ Terminal 2: check the plugin HTTP endpoint.
 ```bash
 curl -s http://127.0.0.1:8765/health
 curl -s http://127.0.0.1:8765/graph/summary
+curl -s http://127.0.0.1:8765/layouts
 ```
 
 Then check the MCP sidecar.
@@ -76,10 +98,27 @@ Then check the MCP sidecar.
 npm run mcp:list
 npm run mcp:health
 npm run mcp:summary
+npm run mcp:layouts
+npm run mcp:nodes
 ```
 
 `npm run mcp:list` only checks MCP tool registration. `npm run mcp:summary`
 requires Gephi to be running with the plugin loaded.
+
+Example mutating calls:
+
+```bash
+npm run mcp:preset
+npm run mcp:ranking-degree
+npm run mcp:partition-kind
+npm run mcp:run-layout
+npm run mcp:filter-foreign
+npm run mcp:reset-filters
+```
+
+The preset assumes an `archmotif`-style graph with attributes such as `kind`,
+`foreign`, and `relation`. Generic partition/ranking/filter tools can use any
+attribute listed by `list_node_attributes` or `list_edge_attributes`.
 
 To connect an MCP-capable agent, configure it as a stdio server:
 
@@ -103,8 +142,8 @@ there rather than in Maven Central.
 The project is deliberately split into two layers:
 
 - `ControlServer`: local transport and request handling.
-- `GephiFacade`: calls into Gephi APIs such as Graph, Layout, Appearance, Filter,
-  and Export.
+- `GephiFacade`: calls into Gephi APIs such as Graph, GraphView, Layout, and
+  element styling.
 - `mcp-server`: stdio MCP sidecar that wraps the local HTTP endpoint as tools.
 
 MCP should sit on top of this facade rather than mixing protocol code with
@@ -113,9 +152,9 @@ and makes it easier to swap the MCP Java SDK transport later.
 
 ## Security
 
-The server binds to `127.0.0.1` only. Before adding mutating tools, the plugin
-should add a per-session token or explicit enable switch. Localhost is not a
-permission model.
+The server binds to `127.0.0.1` only. Before using this outside a local
+experiment, the plugin should add a per-session token or explicit enable switch.
+Localhost is not a permission model.
 
 ## References
 

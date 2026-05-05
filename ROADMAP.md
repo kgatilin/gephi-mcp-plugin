@@ -31,21 +31,24 @@ Verify:
 
 ## Stage 1 - MCP Transport
 
-Current partial result:
+Current result:
 
 - A stdio MCP sidecar exists in `mcp-server/`.
-- It exposes `gephi_health` and `get_graph_summary`.
-- It calls the Gephi plugin's localhost HTTP endpoint.
-
-Result:
-
-- Add MCP server transport on localhost.
-- Expose read-only tools:
+- It exposes read-only workspace tools:
+  - `gephi_health`
   - `get_graph_summary`
   - `list_node_attributes`
   - `list_edge_attributes`
-  - `get_selection`
-  - `get_visible_graph_stats`
+  - `sample_nodes`
+  - `sample_edges`
+  - `get_node`
+  - `get_neighborhood`
+- It calls the Gephi plugin's localhost HTTP endpoint.
+
+Remaining:
+
+- Add explicit selection-aware reads if Gephi selection APIs are stable enough.
+- Decide whether to keep the sidecar or embed MCP directly inside the plugin.
 
 Verify:
 
@@ -55,17 +58,18 @@ Verify:
 
 ## Stage 2 - View Presets
 
-Result:
+Current result:
 
-- Add mutating tools for repeatable view setup:
-  - `style_nodes_by_attribute`
-  - `style_edges_by_attribute`
-  - `size_nodes_by_degree`
+- Added mutating tools for repeatable view setup:
+  - `partition_nodes`
+  - `partition_edges`
+  - `ranking_nodes`
   - `apply_code_graph_preset`
 - First preset targets `archmotif` exports:
   - node color by `kind`
   - foreign nodes grey
-  - calls/contains/dependsOn edge palettes
+  - calls/contains/imports/dependencies edge palettes
+  - node size by degree
 
 Verify:
 
@@ -75,14 +79,18 @@ Verify:
 
 ## Stage 3 - Layout Tools
 
-Result:
+Current result:
 
-- Add layout commands:
+- Added layout commands:
   - `list_layouts`
-  - `run_layout(name, iterations, params)`
-  - `stop_layout`
+  - `run_layout(name, iterations)` runs a bounded synchronous layout.
 - Start with built-in layouts available through Gephi APIs, especially
   ForceAtlas2 and Yifan Hu when present.
+
+Remaining:
+
+- Add layout parameter setting.
+- Add async long-running layout jobs plus `stop_layout`.
 
 Verify:
 
@@ -91,13 +99,19 @@ Verify:
 
 ## Stage 4 - Filters And Focus
 
-Result:
+Current result:
 
-- Add tools:
-  - `filter_nodes(attribute, op, value)`
-  - `filter_edges(attribute, op, value)`
-  - `focus_node(id, depth)`
+- Added tools:
+  - `filter_graph(element, attribute, op, value)`
+  - `get_neighborhood(id, depth, limit)`
   - `reset_filters`
+- Supported filter operations: `eq`, `neq`, `contains`, `exists`, `missing`,
+  `gt`, `gte`, `lt`, `lte`.
+
+Remaining:
+
+- Add true visual focus/selection once the right Gephi UI controller boundary is
+  chosen.
 
 Verify:
 
@@ -127,5 +141,7 @@ Verify:
   module later.
 - Auth: per-session token, manual enable toggle, or both.
 - Threading: which Gephi API calls need dispatch onto Swing/NetBeans UI thread.
+- UI focus: whether MCP should mutate selection/camera in Overview, or keep to
+  graph data/view mutations and leave camera control to Gephi.
 - Distribution: publish as standalone NBM, GitHub release zip, or Gephi
   Marketplace plugin later.

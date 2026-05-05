@@ -12,6 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const serverPath = resolve(repoRoot, "mcp-server/index.js");
 const command = process.argv[2] || "list";
+const args = parseArgs(process.argv[3]);
 
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -41,10 +42,22 @@ try {
   } else {
     const result = await client.callTool({
       name: command,
-      arguments: {},
+      arguments: args,
     });
     console.log(JSON.stringify(result, null, 2));
   }
 } finally {
   await client.close();
+}
+
+function parseArgs(raw) {
+  if (!raw) {
+    return {};
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error(`Invalid JSON arguments: ${raw}`);
+    process.exit(2);
+  }
 }

@@ -28,9 +28,9 @@ Gephi MCP Plugin inside Gephi Desktop
         v
 Gephi APIs
   GraphController
-  AppearanceController
-  LayoutController
-  FilterController
+  GraphModel / GraphView
+  LayoutBuilder / Layout
+  Element color and size
   ExportController
 ```
 
@@ -54,8 +54,24 @@ The MCP layer should expose narrow tools, not arbitrary code execution:
 
 - read workspace state;
 - apply predefined styles/layouts/filters;
+- sample graph neighborhoods for agent explanation;
 - export artifacts;
 - never execute scripts from a prompt.
+
+## Current Control Level
+
+The current implementation controls Gephi at the graph model level:
+
+- read visible graph summary, attributes, nodes, edges, and bounded
+  neighbourhoods;
+- set node and edge colors for partition-style views;
+- set node sizes for ranking-style views;
+- create and reset Gephi `GraphView` filters;
+- run available Gephi layout algorithms for a bounded number of iterations.
+
+It does not yet control the Overview camera, mouse selection, Preview settings,
+or export pipeline. Those should be added as separate tools instead of hidden
+inside the styling/filtering calls.
 
 ## Security Model
 
