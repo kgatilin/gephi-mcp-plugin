@@ -616,14 +616,22 @@ final class GephiFacade {
     }
 
     private Object columnAttributeValue(Element element, String attr) {
-        Object exact = element.getAttribute(attr);
-        if (exact != null) {
-            return exact;
-        }
-        for (String alias : attributeAliases(element, attr)) {
-            Object value = element.getAttribute(alias);
-            if (value != null) {
-                return value;
+        Column column = attributeColumn(element, attr);
+        return column == null ? null : element.getAttribute(column);
+    }
+
+    private Column attributeColumn(Element element, String attr) {
+        Set<String> candidates = new LinkedHashSet<>();
+        candidates.add(attr);
+        candidates.addAll(attributeAliases(element, attr));
+        for (String candidate : candidates) {
+            String wanted = normalize(candidate);
+            for (Column column : element.getAttributeColumns()) {
+                String id = normalize(column.getId());
+                String title = normalize(column.getTitle());
+                if (id.equals(wanted) || title.equals(wanted)) {
+                    return column;
+                }
             }
         }
         String wanted = normalize(attr);
@@ -631,7 +639,7 @@ final class GephiFacade {
             String id = normalize(column.getId());
             String title = normalize(column.getTitle());
             if (id.equals(wanted) || title.equals(wanted) || id.endsWith("_" + wanted)) {
-                return element.getAttribute(column);
+                return column;
             }
         }
         return null;
@@ -662,7 +670,7 @@ final class GephiFacade {
         if ("size".equals(attribute)) {
             return (double) node.size();
         }
-        return number(node.getAttribute(attribute));
+        return number(attributeValue(node, attribute, graph));
     }
 
     private Double number(Object value) {
