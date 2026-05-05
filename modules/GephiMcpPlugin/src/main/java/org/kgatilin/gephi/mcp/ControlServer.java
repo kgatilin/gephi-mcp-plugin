@@ -10,7 +10,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,11 +43,11 @@ final class ControlServer {
             context("/graph/filter/reset", this::handleResetFilters);
             context("/layouts", this::handleLayouts);
             context("/layouts/run", this::handleRunLayout);
-            server.setExecutor(Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "gephi-mcp-control");
+            server.setExecutor(command -> {
+                Thread t = new Thread(command, "gephi-mcp-control");
                 t.setDaemon(true);
-                return t;
-            }));
+                t.start();
+            });
             server.start();
         } catch (IOException e) {
             throw new IllegalStateException("cannot start local control server", e);

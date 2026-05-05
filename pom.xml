@@ -6,7 +6,7 @@
 
     <groupId>org.kgatilin.gephi</groupId>
     <artifactId>gephi-mcp-plugin-suite</artifactId>
-    <version>0.1.3-SNAPSHOT</version>
+    <version>0.1.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Gephi MCP Plugin Suite</name>
