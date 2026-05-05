@@ -11,8 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 final class ControlServer {
+    private static final Logger LOG = Logger.getLogger(ControlServer.class.getName());
+
     private final int port;
     private final GephiFacade gephi;
     private HttpServer server;
@@ -25,21 +29,21 @@ final class ControlServer {
     void start() {
         try {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
-            server.createContext("/health", this::handleHealth);
-            server.createContext("/graph/summary", this::handleGraphSummary);
-            server.createContext("/graph/attributes", this::handleGraphAttributes);
-            server.createContext("/graph/nodes", this::handleGraphNodes);
-            server.createContext("/graph/edges", this::handleGraphEdges);
-            server.createContext("/graph/node", this::handleGraphNode);
-            server.createContext("/graph/neighborhood", this::handleGraphNeighborhood);
-            server.createContext("/graph/partition/nodes", this::handlePartitionNodes);
-            server.createContext("/graph/partition/edges", this::handlePartitionEdges);
-            server.createContext("/graph/ranking/nodes", this::handleRankingNodes);
-            server.createContext("/graph/preset/code", this::handleCodePreset);
-            server.createContext("/graph/filter", this::handleGraphFilter);
-            server.createContext("/graph/filter/reset", this::handleResetFilters);
-            server.createContext("/layouts", this::handleLayouts);
-            server.createContext("/layouts/run", this::handleRunLayout);
+            context("/health", this::handleHealth);
+            context("/graph/summary", this::handleGraphSummary);
+            context("/graph/attributes", this::handleGraphAttributes);
+            context("/graph/nodes", this::handleGraphNodes);
+            context("/graph/edges", this::handleGraphEdges);
+            context("/graph/node", this::handleGraphNode);
+            context("/graph/neighborhood", this::handleGraphNeighborhood);
+            context("/graph/partition/nodes", this::handlePartitionNodes);
+            context("/graph/partition/edges", this::handlePartitionEdges);
+            context("/graph/ranking/nodes", this::handleRankingNodes);
+            context("/graph/preset/code", this::handleCodePreset);
+            context("/graph/filter", this::handleGraphFilter);
+            context("/graph/filter/reset", this::handleResetFilters);
+            context("/layouts", this::handleLayouts);
+            context("/layouts/run", this::handleRunLayout);
             server.setExecutor(Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "gephi-mcp-control");
                 t.setDaemon(true);
@@ -49,6 +53,17 @@ final class ControlServer {
         } catch (IOException e) {
             throw new IllegalStateException("cannot start local control server", e);
         }
+    }
+
+    private void context(String path, Handler handler) {
+        server.createContext(path, exchange -> {
+            try {
+                handler.handle(exchange);
+            } catch (RuntimeException | Error e) {
+                LOG.log(Level.WARNING, "Gephi MCP request failed: " + exchange.getRequestURI(), e);
+                write(exchange, 500, Json.error(e.getClass().getSimpleName(), e.getMessage()));
+            }
+        });
     }
 
     void stop() {
@@ -240,5 +255,10 @@ final class ControlServer {
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(bytes);
         }
+    }
+
+    @FunctionalInterface
+    private interface Handler {
+        void handle(HttpExchange exchange) throws IOException;
     }
 }

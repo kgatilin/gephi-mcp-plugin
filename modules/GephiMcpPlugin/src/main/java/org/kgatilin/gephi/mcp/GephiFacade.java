@@ -251,14 +251,9 @@ final class GephiFacade {
         }
         double low = values.stream().min(Comparator.naturalOrder()).orElse(0d);
         double high = values.stream().max(Comparator.naturalOrder()).orElse(0d);
-        graph.writeLock();
-        try {
-            for (int i = 0; i < nodes.size(); i++) {
-                double ratio = high == low ? 0.5d : (values.get(i) - low) / (high - low);
-                nodes.get(i).setSize((float) (min + ratio * (max - min)));
-            }
-        } finally {
-            graph.writeUnlock();
+        for (int i = 0; i < nodes.size(); i++) {
+            double ratio = high == low ? 0.5d : (values.get(i) - low) / (high - low);
+            nodes.get(i).setSize((float) (min + ratio * (max - min)));
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("ok", true);
@@ -279,28 +274,24 @@ final class GephiFacade {
         }
         int styledNodes = 0;
         int styledEdges = 0;
-        graph.writeLock();
-        try {
-            for (Node node : graph.getNodes()) {
-                Object foreign = node.getAttribute("foreign");
-                if (foreign instanceof Boolean b && b) {
-                    node.setColor(new Color(170, 170, 170));
-                    node.setAlpha(0.45f);
-                } else {
-                    node.setColor(colorFor(valueOr(node.getAttribute("kind"), "node")));
-                    node.setAlpha(0.95f);
-                }
-                node.setSize(Math.max(8f, 6f + graph.getDegree(node) * 1.2f));
-                styledNodes++;
+        for (Node node : graph.getNodes()) {
+            Object foreign = attributeValue(node, "foreign", graph);
+            if (foreign instanceof Boolean b && b) {
+                node.setColor(new Color(170, 170, 170));
+                node.setAlpha(0.45f);
+            } else {
+                node.setColor(colorFor(valueOr(attributeValue(node, "kind", graph), "node")));
+                node.setAlpha(0.95f);
             }
-            for (Edge edge : graph.getEdges()) {
-                Object relation = valueOr(edge.getAttribute("relation"), valueOr(edge.getTypeLabel(), "edge"));
-                edge.setColor(edgeColorFor(String.valueOf(relation)));
-                edge.setAlpha(0.55f);
-                styledEdges++;
-            }
-        } finally {
-            graph.writeUnlock();
+            node.setSize(Math.max(8f, 6f + graph.getDegree(node) * 1.2f));
+            styledNodes++;
+        }
+        for (Edge edge : graph.getEdges()) {
+            Object relation = valueOr(attributeValue(edge, "relation", graph),
+                    valueOr(attributeValue(edge, "kind", graph), valueOr(edge.getTypeLabel(), "edge")));
+            edge.setColor(edgeColorFor(String.valueOf(relation)));
+            edge.setAlpha(0.55f);
+            styledEdges++;
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("ok", true);
@@ -436,27 +427,22 @@ final class GephiFacade {
         }
         Map<String, Color> colors = new LinkedHashMap<>();
         int styled = 0;
-        graph.writeLock();
-        try {
-            if ("edge".equals(elementType)) {
-                for (Edge edge : graph.getEdges()) {
-                    Object value = attributeValue(edge, attribute, graph);
-                    Color color = partitionColor(colors, value);
-                    edge.setColor(color);
-                    edge.setAlpha(0.65f);
-                    styled++;
-                }
-            } else {
-                for (Node node : graph.getNodes()) {
-                    Object value = attributeValue(node, attribute, graph);
-                    Color color = partitionColor(colors, value);
-                    node.setColor(color);
-                    node.setAlpha(0.95f);
-                    styled++;
-                }
+        if ("edge".equals(elementType)) {
+            for (Edge edge : graph.getEdges()) {
+                Object value = attributeValue(edge, attribute, graph);
+                Color color = partitionColor(colors, value);
+                edge.setColor(color);
+                edge.setAlpha(0.65f);
+                styled++;
             }
-        } finally {
-            graph.writeUnlock();
+        } else {
+            for (Node node : graph.getNodes()) {
+                Object value = attributeValue(node, attribute, graph);
+                Color color = partitionColor(colors, value);
+                node.setColor(color);
+                node.setAlpha(0.95f);
+                styled++;
+            }
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("ok", true);
@@ -626,7 +612,47 @@ final class GephiFacade {
                 return edge.getTypeLabel();
             }
         }
-        return element.getAttribute(attr);
+        return columnAttributeValue(element, attr);
+    }
+
+    private Object columnAttributeValue(Element element, String attr) {
+        Object exact = element.getAttribute(attr);
+        if (exact != null) {
+            return exact;
+        }
+        for (String alias : attributeAliases(element, attr)) {
+            Object value = element.getAttribute(alias);
+            if (value != null) {
+                return value;
+            }
+        }
+        String wanted = normalize(attr);
+        for (Column column : element.getAttributeColumns()) {
+            String id = normalize(column.getId());
+            String title = normalize(column.getTitle());
+            if (id.equals(wanted) || title.equals(wanted) || id.endsWith("_" + wanted)) {
+                return element.getAttribute(column);
+            }
+        }
+        return null;
+    }
+
+    private List<String> attributeAliases(Element element, String attr) {
+        List<String> aliases = new ArrayList<>();
+        if (element instanceof Node) {
+            aliases.add("n_" + attr);
+            if ("archmotif_id".equals(attr)) {
+                aliases.add("n_id");
+            }
+        }
+        if (element instanceof Edge) {
+            aliases.add("e_" + attr);
+            if ("relation".equals(attr)) {
+                aliases.add("e_kind");
+                aliases.add("kind");
+            }
+        }
+        return aliases;
     }
 
     private Double numericNodeValue(Graph graph, Node node, String attribute) {

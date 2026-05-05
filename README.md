@@ -50,7 +50,7 @@ mvn clean package
 The installable NBM is written to:
 
 ```text
-modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.1-SNAPSHOT.nbm
+modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.2-SNAPSHOT.nbm
 ```
 
 Install it in Gephi Desktop through `Tools -> Plugins -> Downloaded -> Add
