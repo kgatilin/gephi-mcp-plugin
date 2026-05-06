@@ -1,0 +1,202 @@
+{
+  "defaultPreset": "architecture_overview",
+  "presets": {
+    "architecture_overview": {
+      "description": "General graph overview: deterministic kind/layer styling, degree sizing, and a compact ForceAtlas 2 layout.",
+      "resetFilters": true,
+      "statistics": [
+        { "name": "Degree" }
+      ],
+      "style": {
+        "nodeColorAttribute": "kind",
+        "edgeColorAttribute": "layer",
+        "nodeSizeAttribute": "degree",
+        "minSize": 3,
+        "maxSize": 18,
+        "nodeStyles": [
+          { "attribute": "kind", "op": "in", "value": "package,file", "color": "#2f80ed", "alpha": 0.9, "size": 8 },
+          { "attribute": "kind", "op": "in", "value": "function,method", "color": "#f59f00", "alpha": 0.9, "size": 8 },
+          { "attribute": "kind", "op": "in", "value": "type,field", "color": "#d64545", "alpha": 0.9, "size": 8 },
+          { "attribute": "kind", "op": "in", "value": "branch,loop,defer", "color": "#8e44ad", "alpha": 0.65, "size": 5 },
+          { "attribute": "kind", "op": "in", "value": "goroutine,channelop,syncprim", "color": "#00a6b4", "alpha": 0.9, "size": 7 },
+          { "attribute": "foreign", "op": "eq", "value": "true", "alpha": 0.18, "size": 3 }
+        ],
+        "edgeStyles": [
+          { "attribute": "kind", "op": "exists", "alpha": 0.45, "weight": 0.15, "limit": 10000 }
+        ]
+      },
+      "focus": {
+        "attribute": "is_contract",
+        "op": "eq",
+        "value": "true",
+        "color": "#1f8f2e",
+        "alpha": 0.98,
+        "size": 12,
+        "filter": false
+      },
+      "layout": {
+        "name": "ForceAtlas 2",
+        "iterations": 140,
+        "parameters": {
+          "scalingRatio": 10,
+          "gravity": 1,
+          "adjustSizes": true,
+          "linLogMode": false,
+          "edgeWeightInfluence": 1
+        }
+      }
+    },
+    "internal_architecture": {
+      "extends": "architecture_overview",
+      "description": "Highlight internal nodes and dim foreign nodes while keeping the full graph visible.",
+      "filter": {
+        "element": "node",
+        "attribute": "foreign",
+        "op": "neq",
+        "value": "true"
+      },
+      "style": {
+        "minSize": 3,
+        "maxSize": 16
+      },
+      "layout": {
+        "iterations": 120
+      }
+    },
+    "structure_model": {
+      "extends": "architecture_overview",
+      "description": "Focus structural and type/dependency edges for package, file, type, and field navigation.",
+      "filter": {
+        "element": "edge",
+        "attribute": "layer",
+        "op": "in",
+        "value": "structure,type,dependency"
+      },
+      "layout": {
+        "iterations": 100,
+        "parameters": {
+          "scalingRatio": 8,
+          "gravity": 1.2,
+          "adjustSizes": true,
+          "linLogMode": false,
+          "edgeWeightInfluence": 1
+        }
+      }
+    },
+    "behavior_calls": {
+      "extends": "architecture_overview",
+      "description": "Focus call/callback edges and behavior nodes.",
+      "filter": {
+        "element": "edge",
+        "attribute": "layer",
+        "op": "eq",
+        "value": "call"
+      },
+      "style": {
+        "nodeStyles": [
+          { "attribute": "kind", "op": "in", "value": "package,file", "color": "#2f80ed", "alpha": 0.72, "size": 6 },
+          { "attribute": "kind", "op": "in", "value": "type,field", "color": "#d64545", "alpha": 0.72, "size": 6 },
+          { "attribute": "kind", "op": "in", "value": "function,method", "color": "#f59f00", "alpha": 0.98, "size": 10 },
+          { "attribute": "kind", "op": "in", "value": "branch,loop,defer", "color": "#8e44ad", "alpha": 0.72, "size": 5 },
+          { "attribute": "kind", "op": "in", "value": "goroutine,channelop,syncprim", "color": "#00a6b4", "alpha": 0.95, "size": 8 }
+        ]
+      },
+      "layout": {
+        "iterations": 100
+      }
+    },
+    "type_usage": {
+      "extends": "architecture_overview",
+      "description": "Focus type, body-level type usage, return, embed, implementation, and dependency edges.",
+      "filter": {
+        "element": "edge",
+        "attribute": "kind",
+        "op": "in",
+        "value": "usesType,returns,implements,embeds,dependsOn"
+      },
+      "style": {
+        "nodeStyles": [
+          { "attribute": "kind", "op": "eq", "value": "type", "color": "#d64545", "alpha": 0.98, "size": 11 },
+          { "attribute": "kind", "op": "eq", "value": "field", "color": "#d64545", "alpha": 0.72, "size": 5 }
+        ]
+      },
+      "layout": {
+        "iterations": 110
+      }
+    },
+    "attribute_focus": {
+      "extends": "architecture_overview",
+      "description": "Highlight and filter nodes matching a generic attribute predicate. Override focusAttribute/focusValue per graph.",
+      "focus": {
+        "attribute": "is_contract",
+        "op": "eq",
+        "value": "true",
+        "color": "#1f8f2e",
+        "alpha": 0.98,
+        "size": 12,
+        "filter": true
+      },
+      "layout": {
+        "iterations": 80
+      }
+    },
+    "attribute_shell": {
+      "extends": "architecture_overview",
+      "description": "Place focused nodes on a fixed circle, then run layout around them. Override focusAttribute/focusValue per graph.",
+      "focus": {
+        "attribute": "is_contract",
+        "op": "eq",
+        "value": "true",
+        "color": "#1f8f2e",
+        "alpha": 0.98,
+        "size": 12,
+        "filter": false,
+        "circle": {
+          "radius": 1300,
+          "fixed": true
+        }
+      },
+      "layout": {
+        "iterations": 180,
+        "parameters": {
+          "scalingRatio": 9,
+          "gravity": 1.1,
+          "adjustSizes": true,
+          "linLogMode": false,
+          "edgeWeightInfluence": 1
+        }
+      }
+    },
+    "modularity_clusters": {
+      "extends": "architecture_overview",
+      "description": "Run modularity, color nodes by modularity class, and lay out communities.",
+      "statistics": [
+        { "name": "Degree" },
+        {
+          "name": "Modularity",
+          "parameters": {
+            "useWeight": false,
+            "resolution": 1
+          }
+        }
+      ],
+      "style": {
+        "nodeColorAttribute": "modularity_class",
+        "edgeColorAttribute": "layer",
+        "nodeSizeAttribute": "degree",
+        "minSize": 3,
+        "maxSize": 18
+      },
+      "layout": {
+        "iterations": 160,
+        "parameters": {
+          "scalingRatio": 12,
+          "gravity": 1,
+          "adjustSizes": true,
+          "linLogMode": false,
+          "edgeWeightInfluence": 1
+        }
+      }
+    }
+  }
+}
