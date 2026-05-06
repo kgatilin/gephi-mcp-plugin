@@ -214,11 +214,13 @@ predicates such as `eq` plus multi-value predicates such as `in` and `not_in`,
 so callers can filter graph layers carried as attributes. Use `mode=highlight`
 when you only want the older visual dimming behavior, and `reset_filters` to
 return to the full graph view.
+
 `apply_style_preset` is implemented in the MCP sidecar by orchestrating
 primitive HTTP calls; it is not a separate Java plugin endpoint. It also accepts
 generic `nodeStyles` and `edgeStyles` rules, so a caller can apply a repeatable
 palette and edge weight/opacity by ids or attribute filters without adding
 domain-specific code to the Gephi plugin.
+
 `apply_view_preset` is also MCP-side orchestration. It loads named generic view
 presets from `mcp-server/view-presets/defaults.json` plus an optional user JSON
 config at `~/.config/gephi-mcp-plugin/view-presets.json` or the path in
@@ -229,28 +231,35 @@ planned primitive calls without mutating the Gephi workspace. Built-in presets
 include `architecture_overview`, `internal_architecture`, `structure_model`,
 `behavior_calls`, `type_usage`, `attribute_focus`, `attribute_shell`, and
 `modularity_clusters`.
+
 `style_nodes` and `layout_nodes_circle` are generic node-selection operations:
 they select by ids or by any node attribute filter. `style_edges` does the same
 for edges and can adjust color, alpha, and weight/thickness.
+
 `analyze_neighborhood` is an MCP-side analysis helper: it calls the generic
 neighborhood primitive, saves the full extracted subgraph as a local output
 artifact, and returns compact distributions and degree-shape metrics for the
 requested node/edge attributes. It is intended for agent workflows that need a
 bounded subgraph contract without dumping the whole graph into the LLM context.
+
 `focus_neighborhood` is the corresponding visual helper: it extracts the same
 bounded neighborhood, styles the selected node ids, and can apply a real
 GraphView filter so the neighborhood becomes the active visible graph.
+
 `open_graph` accepts a local path and currently supports `.gephi` projects via
 Gephi's Project API plus importer-supported graph files such as GraphML and
 GEXF via Gephi's Import API.
+
 `top_nodes` is graph-generic. It supports `degree`, `inDegree`, `outDegree`,
 and `weightedDegree`; `weightedDegree` uses Gephi edge weights instead of
 domain-specific edge semantics. Use `attribute_distribution` and
 `includeKinds`/`excludeKinds` when a graph carries useful grouping attributes.
+
 `run_layout` accepts a `parameters` object. Parameter names are matched against
 the names returned by `list_layouts`, display names, and short aliases such as
 `scalingRatio`, `gravity`, `adjustSizes`, `linLogMode`, and
 `barnesHutOptimization`.
+
 `run_statistics` accepts a `parameters` object matched against JavaBean setter
 names exposed by the selected Gephi statistic, for example `directed`,
 `useWeight`, `resolution`, `probability`, or `epsilon`.

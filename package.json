@@ -5,7 +5,8 @@
   "type": "module",
   "description": "MCP sidecar for the Gephi MCP Plugin localhost control endpoint.",
   "bin": {
-    "gephi-mcp-sidecar": "mcp-server/index.js"
+    "gephi-mcp-sidecar": "mcp-server/index.js",
+    "gephi-mcp": "scripts/mcp-call.js"
   },
   "scripts": {
     "mcp": "node mcp-server/index.js",

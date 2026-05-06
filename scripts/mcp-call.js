@@ -11,8 +11,13 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
 const serverPath = resolve(repoRoot, "mcp-server/index.js");
-const command = process.argv[2] || "list";
+const command = process.argv[2] || "help";
 const args = parseArgs(process.argv[3]);
+
+if (command === "help" || command === "--help" || command === "-h") {
+  printUsage();
+  process.exit(0);
+}
 
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -44,7 +49,7 @@ try {
       name: command,
       arguments: args,
     });
-    console.log(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result.structuredContent ?? result, null, 2));
   }
 } finally {
   await client.close();
@@ -60,4 +65,21 @@ function parseArgs(raw) {
     console.error(`Invalid JSON arguments: ${raw}`);
     process.exit(2);
   }
+}
+
+function printUsage() {
+  console.log(`Usage:
+  gephi-mcp help
+  gephi-mcp list
+  gephi-mcp <tool-name> [json-arguments]
+
+Examples:
+  gephi-mcp gephi_health
+  gephi-mcp get_graph_summary
+  gephi-mcp open_graph '{"path":"/tmp/graph.graphml"}'
+  gephi-mcp apply_view_preset '{"preset":"architecture_overview"}'
+  gephi-mcp run_layout '{"name":"ForceAtlas 2","iterations":100,"parameters":{"scalingRatio":10,"adjustSizes":true,"linLogMode":false}}'
+
+This CLI calls Gephi MCP tools through the stdio sidecar. It does not call the
+Gephi plugin HTTP endpoint directly.`);
 }
