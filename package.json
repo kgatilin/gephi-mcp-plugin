@@ -1,6 +1,6 @@
 {
   "name": "gephi-mcp-plugin-sidecar",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "private": true,
   "type": "module",
   "description": "MCP sidecar for the Gephi MCP Plugin localhost control endpoint.",
@@ -15,6 +15,7 @@
     "mcp:summary": "node scripts/mcp-call.js get_graph_summary",
     "mcp:open-example": "node scripts/mcp-call.js open_graph \"{\\\"path\\\":\\\"$PWD/examples/tiny.graphml\\\"}\"",
     "mcp:save-project": "node scripts/mcp-call.js save_project",
+    "mcp:export-preview": "node scripts/mcp-call.js export_preview '{\"path\":\"/tmp/gephi-preview.png\",\"width\":2400,\"height\":1800,\"edgeThickness\":0.25,\"arrowSize\":0}'",
     "mcp:profile": "node scripts/mcp-call.js graph_profile",
     "mcp:top-degree": "node scripts/mcp-call.js top_nodes '{\"score\":\"degree\",\"limit\":20}'",
     "mcp:top-weighted": "node scripts/mcp-call.js top_nodes '{\"score\":\"weightedDegree\",\"limit\":20}'",

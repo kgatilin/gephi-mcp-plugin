@@ -77,6 +77,7 @@ Examples:
   gephi-mcp gephi_health
   gephi-mcp get_graph_summary
   gephi-mcp open_graph '{"path":"/tmp/graph.graphml"}'
+  gephi-mcp export_preview '{"path":"/tmp/graph.png","width":2400,"height":1800,"edgeThickness":0.25,"arrowSize":0}'
   gephi-mcp apply_view_preset '{"preset":"architecture_overview"}'
   gephi-mcp run_layout '{"name":"ForceAtlas 2","iterations":100,"parameters":{"scalingRatio":10,"adjustSizes":true,"linLogMode":false}}'
 

@@ -3,6 +3,7 @@ package org.kgatilin.gephi.mcp;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
@@ -32,9 +33,18 @@ import org.gephi.graph.api.Table;
 import org.gephi.io.importer.api.Container;
 import org.gephi.io.importer.api.ImportController;
 import org.gephi.io.importer.api.Report;
+import org.gephi.io.exporter.api.ExportController;
+import org.gephi.io.exporter.preview.PDFExporter;
+import org.gephi.io.exporter.preview.PNGExporter;
+import org.gephi.io.exporter.preview.SVGExporter;
+import org.gephi.io.exporter.spi.Exporter;
 import org.gephi.layout.spi.Layout;
 import org.gephi.layout.spi.LayoutBuilder;
 import org.gephi.layout.spi.LayoutProperty;
+import org.gephi.preview.api.PreviewController;
+import org.gephi.preview.api.PreviewModel;
+import org.gephi.preview.api.PreviewProperties;
+import org.gephi.preview.api.PreviewProperty;
 import org.gephi.project.api.Project;
 import org.gephi.project.api.ProjectController;
 import org.gephi.project.api.Workspace;
@@ -519,6 +529,166 @@ final class GephiFacade {
         out.put("visibleEdges", graph == null ? 0 : graph.getEdgeCount());
         out.put("filtered", isFilteredView(graphModel()));
         return Json.object(out);
+    }
+
+    String exportPreview(String path, String format, int width, int height, float margin,
+            boolean transparentBackground, boolean showEdges, boolean showNodeLabels,
+            boolean showEdgeLabels, String backgroundColor, String nodeOpacity,
+            String edgeOpacity, String edgeThickness, String arrowSize,
+            boolean directed, boolean useEdgeWeight, boolean scaleStrokes) {
+        if (path == null || path.isBlank()) {
+            return Json.error("bad_request", "path is required");
+        }
+        ProjectController projects = Lookup.getDefault().lookup(ProjectController.class);
+        if (projects == null) {
+            return Json.error("not_available", "Gephi ProjectController is not available");
+        }
+        Workspace workspace = projects.getCurrentWorkspace();
+        if (workspace == null) {
+            return Json.error("no_workspace", "no active Gephi workspace");
+        }
+        ExportController exports = Lookup.getDefault().lookup(ExportController.class);
+        if (exports == null) {
+            return Json.error("not_available", "Gephi ExportController is not available");
+        }
+
+        File file = expandPath(path);
+        File parent = file.getParentFile();
+        if (parent != null && !parent.isDirectory() && !parent.mkdirs()) {
+            return Json.error("io_error", "cannot create directory: " + parent.getAbsolutePath());
+        }
+
+        String exportFormat = previewExportFormat(format, file);
+        Exporter exporter = exports.getExporter(exportFormat);
+        if (exporter == null) {
+            exporter = exports.getFileExporter(file);
+        }
+        if (exporter == null) {
+            return Json.error("unsupported_format", "no preview exporter for format: " + exportFormat);
+        }
+
+        configurePreview(workspace, transparentBackground, showEdges, showNodeLabels,
+                showEdgeLabels, backgroundColor, nodeOpacity, edgeOpacity, edgeThickness,
+                arrowSize, directed, useEdgeWeight);
+        if (!configurePreviewExporter(exporter, workspace, exportFormat, width, height,
+                margin, transparentBackground, scaleStrokes)) {
+            return Json.error("unsupported_format", "preview export supports png, svg, and pdf");
+        }
+
+        try {
+            exports.exportFile(file, exporter);
+        } catch (IOException e) {
+            return Json.error("io_error", e.getMessage());
+        } catch (RuntimeException e) {
+            return Json.error(e.getClass().getSimpleName(), e.getMessage());
+        }
+
+        Graph graph = visibleGraph();
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("ok", true);
+        out.put("tool", "export_preview");
+        out.put("path", file.getAbsolutePath());
+        out.put("format", exportFormat);
+        out.put("bytes", file.length());
+        out.put("width", width);
+        out.put("height", height);
+        out.put("margin", margin);
+        out.put("visibleNodes", graph == null ? 0 : graph.getNodeCount());
+        out.put("visibleEdges", graph == null ? 0 : graph.getEdgeCount());
+        out.put("filtered", isFilteredView(graphModel()));
+        return Json.object(out);
+    }
+
+    private String previewExportFormat(String format, File file) {
+        String value = format == null || format.isBlank() ? extension(file.getName()) : format;
+        value = normalizeIdentifier(value);
+        return value.isBlank() ? "png" : value;
+    }
+
+    private String extension(String name) {
+        int idx = name.lastIndexOf('.');
+        return idx < 0 || idx == name.length() - 1 ? "" : name.substring(idx + 1);
+    }
+
+    private void configurePreview(Workspace workspace, boolean transparentBackground,
+            boolean showEdges, boolean showNodeLabels, boolean showEdgeLabels,
+            String backgroundColor, String nodeOpacity, String edgeOpacity,
+            String edgeThickness, String arrowSize, boolean directed,
+            boolean useEdgeWeight) {
+        PreviewController preview = Lookup.getDefault().lookup(PreviewController.class);
+        if (preview == null) {
+            return;
+        }
+        PreviewModel model = preview.getModel(workspace);
+        if (model == null) {
+            return;
+        }
+        PreviewProperties props = model.getProperties();
+        props.putValue(PreviewProperty.DIRECTED, directed);
+        props.putValue(PreviewProperty.SHOW_EDGES, showEdges);
+        props.putValue(PreviewProperty.SHOW_NODE_LABELS, showNodeLabels);
+        props.putValue(PreviewProperty.SHOW_EDGE_LABELS, showEdgeLabels);
+        props.putValue(PreviewProperty.EDGE_USE_WEIGHT, useEdgeWeight);
+        if (transparentBackground) {
+            props.putValue(PreviewProperty.BACKGROUND_COLOR, new Color(255, 255, 255, 0));
+        } else if (backgroundColor != null && !backgroundColor.isBlank()) {
+            props.putValue(PreviewProperty.BACKGROUND_COLOR, parseStyleColor(backgroundColor));
+        }
+        putPreviewFloat(props, PreviewProperty.NODE_OPACITY, opacityPreviewValue(nodeOpacity));
+        putPreviewFloat(props, PreviewProperty.EDGE_OPACITY, opacityPreviewValue(edgeOpacity));
+        putPreviewFloat(props, PreviewProperty.EDGE_THICKNESS, previewFloat(edgeThickness));
+        putPreviewFloat(props, PreviewProperty.ARROW_SIZE, previewFloat(arrowSize));
+    }
+
+    private void putPreviewFloat(PreviewProperties props, String property, Float value) {
+        if (value != null) {
+            props.putValue(property, value);
+        }
+    }
+
+    private Float opacityPreviewValue(String raw) {
+        Float value = previewFloat(raw);
+        if (value == null) {
+            return null;
+        }
+        return value <= 1f ? value * 100f : value;
+    }
+
+    private Float previewFloat(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return parseStyleFloat(raw, "preview property");
+    }
+
+    private boolean configurePreviewExporter(Exporter exporter, Workspace workspace,
+            String format, int width, int height, float margin,
+            boolean transparentBackground, boolean scaleStrokes) {
+        if ("png".equals(format) && exporter instanceof PNGExporter png) {
+            png.setWorkspace(workspace);
+            png.setWidth(clamp(width, 100, 12000, 2400));
+            png.setHeight(clamp(height, 100, 12000, 1800));
+            png.setMargin(Math.round(clamp(margin, 0f, 2000f, 80f)));
+            png.setTransparentBackground(transparentBackground);
+            return true;
+        }
+        if ("svg".equals(format) && exporter instanceof SVGExporter svg) {
+            svg.setWorkspace(workspace);
+            svg.setMargin(clamp(margin, 0f, 2000f, 80f));
+            svg.setScaleStrokes(scaleStrokes);
+            return true;
+        }
+        if ("pdf".equals(format) && exporter instanceof PDFExporter pdf) {
+            pdf.setWorkspace(workspace);
+            float clampedMargin = clamp(margin, 0f, 2000f, 80f);
+            pdf.setMarginTop(clampedMargin);
+            pdf.setMarginRight(clampedMargin);
+            pdf.setMarginBottom(clampedMargin);
+            pdf.setMarginLeft(clampedMargin);
+            pdf.setTransparentBackground(transparentBackground);
+            return true;
+        }
+        return false;
     }
 
     String filter(String elementType, String attribute, String op, String value, String mode, String scope) {
@@ -2412,6 +2582,11 @@ final class GephiFacade {
 
     private int clamp(int value, int min, int max, int defaultValue) {
         int candidate = value <= 0 ? defaultValue : value;
+        return Math.max(min, Math.min(max, candidate));
+    }
+
+    private float clamp(float value, float min, float max, float defaultValue) {
+        float candidate = value < 0f ? defaultValue : value;
         return Math.max(min, Math.min(max, candidate));
     }
 }

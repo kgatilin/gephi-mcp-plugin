@@ -44,6 +44,7 @@ final class ControlServer {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
             context("/health", this::handleHealth);
             context("/project/save", this::handleSaveProject);
+            context("/preview/export", this::handleExportPreview);
             context("/graph/open", this::handleOpenGraph);
             context("/graph/summary", this::handleGraphSummary);
             context("/graph/attributes", this::handleGraphAttributes);
@@ -151,6 +152,7 @@ final class ControlServer {
                 || path.equals("/graph/filter")
                 || path.equals("/graph/filter/reset")
                 || path.equals("/project/save")
+                || path.equals("/preview/export")
                 || path.equals("/layouts/run")
                 || path.equals("/statistics/run");
     }
@@ -216,6 +218,31 @@ final class ControlServer {
             return;
         }
         write(exchange, 200, gephi.saveProject(query(exchange).get("path")));
+    }
+
+    private void handleExportPreview(HttpExchange exchange) throws IOException {
+        if (!requirePost(exchange)) {
+            return;
+        }
+        Map<String, String> query = query(exchange);
+        write(exchange, 200, gephi.exportPreview(
+                query.get("path"),
+                query.get("format"),
+                intQuery(query, "width", 2400),
+                intQuery(query, "height", 1800),
+                floatQuery(query, "margin", 80f),
+                booleanQuery(query, "transparentBackground", false),
+                booleanQuery(query, "showEdges", true),
+                booleanQuery(query, "showNodeLabels", false),
+                booleanQuery(query, "showEdgeLabels", false),
+                query.get("backgroundColor"),
+                query.get("nodeOpacity"),
+                query.get("edgeOpacity"),
+                query.get("edgeThickness"),
+                query.get("arrowSize"),
+                booleanQuery(query, "directed", false),
+                booleanQuery(query, "useEdgeWeight", false),
+                booleanQuery(query, "scaleStrokes", true)));
     }
 
     private void handleGraphAttributes(HttpExchange exchange) throws IOException {

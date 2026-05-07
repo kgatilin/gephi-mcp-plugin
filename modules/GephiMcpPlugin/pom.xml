@@ -12,7 +12,7 @@
 
     <groupId>org.kgatilin.gephi</groupId>
     <artifactId>gephi-mcp-plugin</artifactId>
-    <version>0.1.11-SNAPSHOT</version>
+    <version>0.1.12-SNAPSHOT</version>
     <packaging>nbm</packaging>
 
     <name>Gephi MCP Plugin</name>
@@ -58,6 +58,18 @@
         <dependency>
             <groupId>org.gephi</groupId>
             <artifactId>io-importer-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.gephi</groupId>
+            <artifactId>io-exporter-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.gephi</groupId>
+            <artifactId>io-exporter-preview</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.gephi</groupId>
+            <artifactId>preview-api</artifactId>
         </dependency>
     </dependencies>
 

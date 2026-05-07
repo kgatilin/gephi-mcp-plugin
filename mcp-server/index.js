@@ -74,7 +74,7 @@ const viewPresetStyleOverrideSchema = z.object({
 
 const server = new McpServer({
   name: "gephi-mcp-plugin-sidecar",
-  version: "0.1.11",
+  version: "0.1.12",
 });
 
 server.registerTool(
@@ -183,6 +183,76 @@ server.registerTool(
     annotations: mutatingAnnotations(),
   },
   async ({ path }) => jsonToolResult(pathWithQuery("/project/save", { path }), { method: "POST" }),
+);
+
+server.registerTool(
+  "export_preview",
+  {
+    title: "Export Gephi Preview",
+    description:
+      "Export the current Gephi preview to a local PNG, SVG, or PDF file. The export respects the active Gephi workspace/view.",
+    inputSchema: {
+      path: z.string(),
+      format: z.enum(["png", "svg", "pdf"]).optional(),
+      width: z.number().int().min(100).max(12000).optional(),
+      height: z.number().int().min(100).max(12000).optional(),
+      margin: z.number().min(0).max(2000).optional(),
+      transparentBackground: z.boolean().optional(),
+      showEdges: z.boolean().optional(),
+      showNodeLabels: z.boolean().optional(),
+      showEdgeLabels: z.boolean().optional(),
+      backgroundColor: z.string().optional(),
+      nodeOpacity: z.number().min(0).max(100).optional(),
+      edgeOpacity: z.number().min(0).max(100).optional(),
+      edgeThickness: z.number().min(0).max(100).optional(),
+      arrowSize: z.number().min(0).max(100).optional(),
+      directed: z.boolean().optional(),
+      useEdgeWeight: z.boolean().optional(),
+      scaleStrokes: z.boolean().optional(),
+    },
+    annotations: mutatingAnnotations(),
+  },
+  async ({
+    path,
+    format,
+    width,
+    height,
+    margin,
+    transparentBackground,
+    showEdges,
+    showNodeLabels,
+    showEdgeLabels,
+    backgroundColor,
+    nodeOpacity,
+    edgeOpacity,
+    edgeThickness,
+    arrowSize,
+    directed,
+    useEdgeWeight,
+    scaleStrokes,
+  }) =>
+    jsonToolResult(
+      pathWithQuery("/preview/export", {
+        path,
+        format,
+        width,
+        height,
+        margin,
+        transparentBackground,
+        showEdges,
+        showNodeLabels,
+        showEdgeLabels,
+        backgroundColor,
+        nodeOpacity,
+        edgeOpacity,
+        edgeThickness,
+        arrowSize,
+        directed,
+        useEdgeWeight,
+        scaleStrokes,
+      }),
+      { method: "POST", timeoutMs: 120000 },
+    ),
 );
 
 server.registerTool(

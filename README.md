@@ -13,6 +13,8 @@ clicking through the Gephi UI.
   neighborhoods, and value distributions.
 - Change the current Gephi view in place: partition colors, ranking sizes,
   filters, focus neighborhoods, layouts, and statistics.
+- Export the current Gephi preview to PNG, SVG, or PDF for reports, docs, and
+  social posts.
 - Run repeatable view presets so graph exploration is not a manual sequence of
   Gephi clicks.
 - Keep LLM context small: large tool outputs are saved to disk and the MCP
@@ -70,7 +72,7 @@ mvn clean package
 The installable NBM is written to:
 
 ```text
-modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.11-SNAPSHOT.nbm
+modules/GephiMcpPlugin/target/gephi-mcp-plugin-0.1.12-SNAPSHOT.nbm
 ```
 
 ### 2. Install the plugin in Gephi
@@ -133,6 +135,7 @@ gephi-mcp get_graph_summary
 gephi-mcp graph_profile '{"limit":20}'
 gephi-mcp apply_view_preset '{"preset":"architecture_overview"}'
 gephi-mcp run_layout '{"name":"ForceAtlas 2","iterations":100,"parameters":{"scalingRatio":15,"gravity":1,"adjustSizes":true,"barnesHutOptimization":true}}'
+gephi-mcp export_preview '{"path":"/tmp/graph.png","width":2400,"height":1800,"edgeThickness":0.25,"arrowSize":0}'
 ```
 
 To launch an already installed local Gephi build with a workspace:
@@ -149,6 +152,10 @@ open -a Gephi --args --nosplash --open /path/to/workspace.gephi
 
 Plain `open -a Gephi /path/to/workspace.gephi` may start Gephi without opening
 the workspace.
+
+For large graphs, prefer starting Gephi first and then opening the file through
+`gephi-mcp open_graph`. Combining module reload and workspace open in one Gephi
+startup can leave the Desktop UI busy before the plugin can process commands.
 
 Do not send mutating MCP commands while Gephi is still opening a workspace. The
 plugin checks Swing/AWT responsiveness before layout, styling, and filter
@@ -173,6 +180,7 @@ gephi-mcp open_graph '{"path":"/tmp/graph.graphml"}'
 gephi-mcp sample_nodes '{"query":"service","limit":20}'
 gephi-mcp focus_neighborhood '{"id":"n42","depth":2,"limit":200,"mode":"both"}'
 gephi-mcp apply_view_preset '{"preset":"internal_architecture"}'
+gephi-mcp export_preview '{"path":"/tmp/graph.png","width":2400,"height":1800,"margin":80}'
 gephi-mcp reset_filters
 ```
 
@@ -222,6 +230,7 @@ Environment variables:
 | `open_graph` | Yes | Open a local `.gephi`, GraphML, GEXF, or importer-supported graph file. |
 | `save_project` | Yes | Save the current Gephi project. |
 | `save_workspace` | Yes | Alias for `save_project`; Gephi persists workspaces inside a project. |
+| `export_preview` | Yes | Export the current Gephi preview/view to PNG, SVG, or PDF. |
 
 ### Graph Inspection
 
@@ -342,6 +351,7 @@ should normally use MCP tools or the `gephi-mcp` CLI.
 curl -s http://127.0.0.1:8765/health
 curl -s -X POST "http://127.0.0.1:8765/graph/open?path=$(pwd)/examples/tiny.graphml"
 curl -s http://127.0.0.1:8765/graph/summary
+curl -s -X POST 'http://127.0.0.1:8765/preview/export?path=/tmp/graph.png&width=2400&height=1800&edgeThickness=0.25&arrowSize=0'
 curl -s http://127.0.0.1:8765/layouts
 curl -s http://127.0.0.1:8765/statistics
 curl -s -X POST 'http://127.0.0.1:8765/layouts/run?name=ForceAtlas%202&iterations=100&scalingRatio=15&gravity=1&adjustSizes=true&barnesHutOptimization=true'
